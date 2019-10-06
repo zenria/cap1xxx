@@ -6,64 +6,12 @@
 use embedded_hal::blocking::i2c::{Write, WriteRead};
 
 mod consts;
-
+pub mod error;
 use consts::*;
+use error::*;
 use std::cmp::{max, min};
 use std::fmt::Debug;
 use std::time::Duration;
-
-// Read Error
-#[derive(Debug)]
-pub struct ReadError<T: Debug>(T);
-
-//impl<R: Read> !Read for ReadError<R>;
-
-impl<T: Debug> From<T> for ReadError<T> {
-    fn from(read_error: T) -> Self {
-        ReadError(read_error)
-    }
-}
-
-// Write Error
-#[derive(Debug)]
-pub struct WriteError<W: Debug>(W);
-
-impl<W: Debug> From<W> for WriteError<W> {
-    fn from(write_error: W) -> Self {
-        WriteError(write_error)
-    }
-}
-
-// Combined Read or Write Error
-#[derive(Debug)]
-pub enum Error<R, W>
-where
-    R: Debug,
-    W: Debug,
-{
-    ReadError(ReadError<R>),
-    WriteError(WriteError<W>),
-    LedNumberOverflowError,
-}
-
-impl<R, W> From<ReadError<R>> for Error<R, W>
-where
-    R: Debug,
-    W: Debug,
-{
-    fn from(e: ReadError<R>) -> Self {
-        Error::ReadError(e)
-    }
-}
-impl<R, W> From<WriteError<W>> for Error<R, W>
-where
-    R: Debug,
-    W: Debug,
-{
-    fn from(e: WriteError<W>) -> Self {
-        Error::WriteError(e)
-    }
-}
 
 pub type RWResult<T, R> = Result<R, Error<<T as WriteRead>::Error, <T as Write>::Error>>;
 

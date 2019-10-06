@@ -58,6 +58,7 @@ where
 
         // Tested sane defaults for various configurations
         self.write_byte(R_SAMPLING_CONFIG, 0b00001000)?; // 1sample per measure, 1.28ms time, 35ms cycle
+        self.write_byte(R_CALIBRATION, 0b00111111)?; // recalibrate
         self.write_byte(R_SENSITIVITY, 0b01100000)?; // 2x sensitivity
         self.write_byte(R_GENERAL_CONFIG, 0b00111000)?;
         self.write_byte(R_CONFIGURATION2, 0b01100000)?;

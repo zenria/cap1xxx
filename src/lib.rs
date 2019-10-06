@@ -164,39 +164,39 @@ where
 
     /// Clear the interrupt flag, bit 0, of the
     //  main control register
-    fn clear_interrupt(&mut self) -> RWResult<T, ()> {
+    pub fn clear_interrupt(&mut self) -> RWResult<T, ()> {
         self.clear_bit(R_MAIN_CONTROL, 0)
     }
-    fn interrupt_status(&mut self) -> RWResult<T, bool> {
+    pub fn interrupt_status(&mut self) -> RWResult<T, bool> {
         Ok(self
             .read_byte(R_MAIN_CONTROL)
             .map(|value| (value & 1) > 0)?)
     }
-    fn auto_recalibrate(&mut self, value: bool) -> RWResult<T, ()> {
+    pub fn auto_recalibrate(&mut self, value: bool) -> RWResult<T, ()> {
         self.change_bit(R_GENERAL_CONFIG, 3, value)
     }
-    fn filter_analog_noise(&mut self, value: bool) -> RWResult<T, ()> {
+    pub fn filter_analog_noise(&mut self, value: bool) -> RWResult<T, ()> {
         self.change_bit(R_GENERAL_CONFIG, 4, !value)
     }
-    fn filter_digital_noise(&mut self, value: bool) -> RWResult<T, ()> {
+    pub fn filter_digital_noise(&mut self, value: bool) -> RWResult<T, ()> {
         self.change_bit(R_GENERAL_CONFIG, 5, !value)
     }
     /// Set time before a press and hold is detected,
     /// Clamps to multiples of 35 from 35 to 560
-    fn set_hold_delay(&mut self, delay: Duration) -> RWResult<T, ()> {
+    pub fn set_hold_delay(&mut self, delay: Duration) -> RWResult<T, ()> {
         self.change_value(R_INPUT_CONFIG2, |v| {
             (v & !0b1111) | Self::duration_to_rate_scale(delay)
         })
     }
     /// Set repeat rate in milliseconds,
     //  Clamps to multiples of 35 from 35 to 560
-    fn set_repeat_rate(&mut self, delay: Duration) -> RWResult<T, ()> {
+    pub fn set_repeat_rate(&mut self, delay: Duration) -> RWResult<T, ()> {
         self.change_value(R_INPUT_CONFIG, |v| {
             (v & !0b1111) | Self::duration_to_rate_scale(delay)
         })
     }
 
-    fn duration_to_rate_scale(duration: Duration) -> u8 {
+    pub fn duration_to_rate_scale(duration: Duration) -> u8 {
         let ms = duration.as_millis();
         let ms = max(35, ms);
         let ms = min(560, ms);
@@ -207,7 +207,7 @@ where
     }
 
     /// Toggles multi-touch by toggling the multi-touch block bit in the config register
-    fn enable_multitouch(&mut self, enable: bool) -> RWResult<T, ()> {
+    pub fn enable_multitouch(&mut self, enable: bool) -> RWResult<T, ()> {
         self.change_value(R_MTOUCH_CONFIG, |value| {
             if enable {
                 value & !0x80
@@ -216,40 +216,40 @@ where
             }
         })
     }
-    fn enable_repeat(&mut self, inputs: u8) -> RWResult<T, ()> {
+    pub fn enable_repeat(&mut self, inputs: u8) -> RWResult<T, ()> {
         Ok(self.write_byte(R_REPEAT_EN, inputs)?)
     }
-    fn enable_interrupts(&mut self, inputs: u8) -> RWResult<T, ()> {
+    pub fn enable_interrupts(&mut self, inputs: u8) -> RWResult<T, ()> {
         Ok(self.write_byte(R_INTERRUPT_EN, inputs)?)
     }
-    fn enable_inputs(&mut self, inputs: u8) -> RWResult<T, ()> {
+    pub fn enable_inputs(&mut self, inputs: u8) -> RWResult<T, ()> {
         Ok(self.write_byte(R_INPUT_ENABLE, inputs)?)
     }
 
     // ----------------------------------------------------------------------------
     // LEDS handling
-    fn set_led_linking(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
+    pub fn set_led_linking(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
         if led_index >= self.number_of_leds {
             Err(Error::LedNumberOverflowError)
         } else {
             self.change_bit(R_LED_LINKING, led_index, state)
         }
     }
-    fn set_led_output_type(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
+    pub fn set_led_output_type(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
         if led_index >= self.number_of_leds {
             Err(Error::LedNumberOverflowError)
         } else {
             self.change_bit(R_LED_OUTPUT_TYPE, led_index, state)
         }
     }
-    fn set_led_state(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
+    pub fn set_led_state(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
         if led_index >= self.number_of_leds {
             Err(Error::LedNumberOverflowError)
         } else {
             self.change_bit(R_LED_OUTPUT_CON, led_index, state)
         }
     }
-    fn set_led_polarity(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
+    pub fn set_led_polarity(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
         if led_index >= self.number_of_leds {
             Err(Error::LedNumberOverflowError)
         } else {
@@ -257,7 +257,7 @@ where
         }
     }
     /// Set the behaviour of a LED
-    fn set_led_behaviour(&mut self, led_index: u8, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_behaviour(&mut self, led_index: u8, value: u8) -> RWResult<T, ()> {
         if led_index >= self.number_of_leds {
             Err(Error::LedNumberOverflowError)
         } else {
@@ -267,12 +267,12 @@ where
             self.change_bits(R_LED_BEHAVIOUR_1 + register, offset, 2, value)
         }
     }
-    fn convert_duration_to_period_value(period: Duration) -> u8 {
+    pub fn convert_duration_to_period_value(period: Duration) -> u8 {
         ((min(4064, period.as_millis()) / 32) & 127) as u8
     }
 
     /// Set the overall period of a pulse from 32ms to 4.064 seconds
-    fn set_led_pulse1_period(&mut self, period: Duration) -> RWResult<T, ()> {
+    pub fn set_led_pulse1_period(&mut self, period: Duration) -> RWResult<T, ()> {
         self.change_bits(
             R_LED_PULSE_1_PER,
             0,
@@ -281,7 +281,7 @@ where
         )
     }
     /// Set the overall period of a pulse from 32ms to 4.064 seconds
-    fn set_led_pulse2_period(&mut self, period: Duration) -> RWResult<T, ()> {
+    pub fn set_led_pulse2_period(&mut self, period: Duration) -> RWResult<T, ()> {
         self.change_bits(
             R_LED_PULSE_2_PER,
             0,
@@ -289,7 +289,7 @@ where
             Self::convert_duration_to_period_value(period),
         )
     }
-    fn set_led_breathe_period(&mut self, period: Duration) -> RWResult<T, ()> {
+    pub fn set_led_breathe_period(&mut self, period: Duration) -> RWResult<T, ()> {
         self.change_bits(
             R_LED_BREATHE_PER,
             0,
@@ -297,13 +297,13 @@ where
             Self::convert_duration_to_period_value(period),
         )
     }
-    fn set_led_pulse1_count(&mut self, count: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse1_count(&mut self, count: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_CONFIG, 0, 3, (count - 1) & 7)
     }
-    fn set_led_pulse2_count(&mut self, count: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse2_count(&mut self, count: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_CONFIG, 3, 3, (count - 1) & 7)
     }
-    fn set_led_ramp_alert(&mut self, value: bool) -> RWResult<T, ()> {
+    pub fn set_led_ramp_alert(&mut self, value: bool) -> RWResult<T, ()> {
         self.change_bit(R_LED_CONFIG, 6, value)
     }
 
@@ -312,7 +312,7 @@ where
     //  Rounds input to the nearest valid value.
     //
     //  Valid values are 0, 250, 500, 750, 1000, 1250, 1500, 2000
-    fn set_led_direct_ramp_rate(&mut self, rise_rate: u16, fall_rate: u16) -> RWResult<T, ()> {
+    pub fn set_led_direct_ramp_rate(&mut self, rise_rate: u16, fall_rate: u16) -> RWResult<T, ()> {
         let rise_rate = rise_rate / 250;
         let fall_rate = fall_rate / 250;
         let rise_rate = min(7, rise_rate);
@@ -320,44 +320,44 @@ where
         let rate = rise_rate << 4 | fall_rate;
         Ok(self.write_byte(R_LED_DIRECT_RAMP, rate as u8)?)
     }
-    fn set_led_direct_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
+    pub fn set_led_direct_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
         let value = duty_max << 4 | duty_min;
         Ok(self.write_byte(R_LED_DIRECT_DUT, value)?)
     }
-    fn set_led_pulse1_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse1_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
         let value = duty_max << 4 | duty_min;
         Ok(self.write_byte(R_LED_PULSE_1_DUT, value)?)
     }
-    fn set_led_pulse2_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse2_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
         let value = duty_max << 4 | duty_min;
         Ok(self.write_byte(R_LED_PULSE_2_DUT, value)?)
     }
-    fn set_led_breathe_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
+    pub fn set_led_breathe_duty(&mut self, duty_min: u8, duty_max: u8) -> RWResult<T, ()> {
         let value = duty_max << 4 | duty_min;
         Ok(self.write_byte(R_LED_BREATHE_DUT, value)?)
     }
-    fn set_led_direct_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_direct_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_DIRECT_DUT, 0, 4, value)
     }
-    fn set_led_direct_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_direct_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_DIRECT_DUT, 4, 4, value)
     }
-    fn set_led_breathe_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_breathe_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_BREATHE_DUT, 0, 4, value)
     }
-    fn set_led_breathe_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_breathe_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_BREATHE_DUT, 4, 4, value)
     }
-    fn set_led_pulse1_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse1_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_PULSE_1_DUT, 0, 4, value)
     }
-    fn set_led_pulse1_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse1_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_PULSE_1_DUT, 4, 4, value)
     }
-    fn set_led_pulse2_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse2_min_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_PULSE_2_DUT, 0, 4, value)
     }
-    fn set_led_pulse2_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
+    pub fn set_led_pulse2_max_duty(&mut self, value: u8) -> RWResult<T, ()> {
         self.change_bits(R_LED_PULSE_2_DUT, 4, 4, value)
     }
 }

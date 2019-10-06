@@ -70,7 +70,7 @@ where
         }
     }
 
-    fn init(&mut self) -> RWResult<T, ()> {
+    pub fn init(&mut self) -> RWResult<T, ()> {
         //self.repeat_enabled    = 0b00000000
         //self.release_enabled   = 0b11111111
 

@@ -9,41 +9,57 @@ mod consts;
 
 use consts::*;
 use std::cmp::{max, min};
+use std::fmt::Debug;
 use std::time::Duration;
 
 // Read Error
-pub struct ReadError<T>(T);
+#[derive(Debug)]
+pub struct ReadError<T: Debug>(T);
 
 //impl<R: Read> !Read for ReadError<R>;
 
-impl<T> From<T> for ReadError<T> {
+impl<T: Debug> From<T> for ReadError<T> {
     fn from(read_error: T) -> Self {
         ReadError(read_error)
     }
 }
 
 // Write Error
-pub struct WriteError<W>(W);
+#[derive(Debug)]
+pub struct WriteError<W: Debug>(W);
 
-impl<W> From<W> for WriteError<W> {
+impl<W: Debug> From<W> for WriteError<W> {
     fn from(write_error: W) -> Self {
         WriteError(write_error)
     }
 }
 
 // Combined Read or Write Error
-pub enum Error<R, W> {
+#[derive(Debug)]
+pub enum Error<R, W>
+where
+    R: Debug,
+    W: Debug,
+{
     ReadError(ReadError<R>),
     WriteError(WriteError<W>),
     LedNumberOverflowError,
 }
 
-impl<R, W> From<ReadError<R>> for Error<R, W> {
+impl<R, W> From<ReadError<R>> for Error<R, W>
+where
+    R: Debug,
+    W: Debug,
+{
     fn from(e: ReadError<R>) -> Self {
         Error::ReadError(e)
     }
 }
-impl<R, W> From<WriteError<W>> for Error<R, W> {
+impl<R, W> From<WriteError<W>> for Error<R, W>
+where
+    R: Debug,
+    W: Debug,
+{
     fn from(e: WriteError<W>) -> Self {
         Error::WriteError(e)
     }
@@ -62,6 +78,8 @@ where
 impl<T> CAP1XXX<T>
 where
     T: WriteRead + Write,
+    <T as WriteRead>::Error: Debug,
+    <T as Write>::Error: Debug,
 {
     pub fn new(i2c: T, number_of_leds: u8) -> Self {
         Self {

@@ -51,7 +51,7 @@ impl<R, W> From<WriteError<W>> for Error<R, W> {
 
 pub type RWResult<T, R> = Result<R, Error<<T as WriteRead>::Error, <T as Write>::Error>>;
 
-struct CAP1XXX<T>
+pub struct CAP1XXX<T>
 where
     T: WriteRead + Write,
 {

@@ -2,50 +2,54 @@ use std::fmt;
 use std::fmt::{Debug, Display};
 
 // Read Error
-#[derive(Debug)]
-pub struct ReadError<T: Debug>(T);
+pub struct ReadError<T>(T);
 
 //impl<R: Read> !Read for ReadError<R>;
 
-impl<T: Debug> From<T> for ReadError<T> {
+impl<T> From<T> for ReadError<T> {
     fn from(read_error: T) -> Self {
         ReadError(read_error)
     }
 }
 
-impl<T: Display + Debug> Display for ReadError<T> {
+impl<T: Display> Display for ReadError<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "I2C ReadError: {}", self.0)
+    }
+}
+
+impl<T: Debug> Debug for ReadError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ReadError {:?}", self.0)
     }
 }
 
 impl<T: std::error::Error> std::error::Error for ReadError<T> {}
 
 // Write Error
-#[derive(Debug)]
-pub struct WriteError<W: Debug>(W);
+pub struct WriteError<W>(W);
 
-impl<W: Debug> From<W> for WriteError<W> {
+impl<W> From<W> for WriteError<W> {
     fn from(write_error: W) -> Self {
         WriteError(write_error)
     }
 }
 
-impl<T: Display + Debug> Display for WriteError<T> {
+impl<T: Display> Display for WriteError<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "I2C WriteError: {}", self.0)
+    }
+}
+impl<T: Debug> Debug for WriteError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "WriteError {:?}", self.0)
     }
 }
 
 impl<T: std::error::Error> std::error::Error for WriteError<T> {}
 
 // Combined Read or Write Error
-#[derive(Debug)]
-pub enum Error<R, W>
-where
-    R: Debug,
-    W: Debug,
-{
+pub enum Error<R, W> {
     ReadError(ReadError<R>),
     WriteError(WriteError<W>),
     LedNumberOverflowError,
@@ -60,8 +64,8 @@ where
 
 impl<R, W> Display for Error<R, W>
 where
-    R: Debug + Display,
-    W: Debug + Display,
+    R: Display,
+    W: Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
@@ -71,21 +75,26 @@ where
         }
     }
 }
-
-impl<R, W> From<ReadError<R>> for Error<R, W>
+impl<R, W> Debug for Error<R, W>
 where
     R: Debug,
     W: Debug,
 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Error::ReadError(e) => std::fmt::Debug::fmt(&e, f),
+            Error::WriteError(e) => std::fmt::Debug::fmt(&e, f),
+            Error::LedNumberOverflowError => write!(f, "LedNumberOverflowError"),
+        }
+    }
+}
+
+impl<R, W> From<ReadError<R>> for Error<R, W> {
     fn from(e: ReadError<R>) -> Self {
         Error::ReadError(e)
     }
 }
-impl<R, W> From<WriteError<W>> for Error<R, W>
-where
-    R: Debug,
-    W: Debug,
-{
+impl<R, W> From<WriteError<W>> for Error<R, W> {
     fn from(e: WriteError<W>) -> Self {
         Error::WriteError(e)
     }

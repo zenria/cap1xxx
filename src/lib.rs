@@ -10,7 +10,6 @@ pub mod error;
 use consts::*;
 use error::*;
 use std::cmp::{max, min};
-use std::fmt::Debug;
 use std::time::Duration;
 
 pub type RWResult<T, R> = Result<R, Error<<T as WriteRead>::Error, <T as Write>::Error>>;
@@ -26,8 +25,6 @@ where
 impl<T> CAP1XXX<T>
 where
     T: WriteRead + Write,
-    <T as WriteRead>::Error: Debug,
-    <T as Write>::Error: Debug,
 {
     pub fn new(i2c: T, number_of_leds: u8) -> Self {
         Self {

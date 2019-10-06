@@ -8,7 +8,7 @@ use embedded_hal::blocking::i2c::{Write, WriteRead};
 mod consts;
 
 use consts::*;
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::time::Duration;
 
 // Read Error
@@ -69,6 +69,37 @@ where
             number_of_leds,
         }
     }
+
+    fn init(&mut self) -> RWResult<T, ()> {
+        //self.repeat_enabled    = 0b00000000
+        //self.release_enabled   = 0b11111111
+
+        //self.product_id = self._get_product_id()?;
+
+        //if not self.product_id in self.supported:
+        //    raise Exception("Product ID {} not supported!".format(self.product_id))
+
+        // Enable all inputs with interrupt by default
+        self.enable_inputs(0b11111111)?;
+        self.enable_interrupts(0b11111111)?;
+
+        // Disable repeat for all channels, but give
+        // it sane defaults anyway
+        self.enable_repeat(0b00000000)?;
+        self.enable_multitouch(true)?;
+
+        self.set_hold_delay(Duration::from_millis(210))?;
+        self.set_repeat_rate(Duration::from_millis(210))?;
+
+        // Tested sane defaults for various configurations
+        self.write_byte(R_SAMPLING_CONFIG, 0b00001000)?; // 1sample per measure, 1.28ms time, 35ms cycle
+        self.write_byte(R_SENSITIVITY, 0b01100000)?; // 2x sensitivity
+        self.write_byte(R_GENERAL_CONFIG, 0b00111000)?;
+        self.write_byte(R_CONFIGURATION2, 0b01100000)?;
+
+        Ok(())
+    }
+
     fn write_byte(
         &mut self,
         register: u8,
@@ -128,6 +159,74 @@ where
         })
     }
 
+    // ----------------------------------------------------------------------------
+    // Buttons handling
+
+    /// Clear the interrupt flag, bit 0, of the
+    //  main control register
+    fn clear_interrupt(&mut self) -> RWResult<T, ()> {
+        self.clear_bit(R_MAIN_CONTROL, 0)
+    }
+    fn interrupt_status(&mut self) -> RWResult<T, bool> {
+        Ok(self
+            .read_byte(R_MAIN_CONTROL)
+            .map(|value| (value & 1) > 0)?)
+    }
+    fn auto_recalibrate(&mut self, value: bool) -> RWResult<T, ()> {
+        self.change_bit(R_GENERAL_CONFIG, 3, value)
+    }
+    fn filter_analog_noise(&mut self, value: bool) -> RWResult<T, ()> {
+        self.change_bit(R_GENERAL_CONFIG, 4, !value)
+    }
+    fn filter_digital_noise(&mut self, value: bool) -> RWResult<T, ()> {
+        self.change_bit(R_GENERAL_CONFIG, 5, !value)
+    }
+    /// Set time before a press and hold is detected,
+    /// Clamps to multiples of 35 from 35 to 560
+    fn set_hold_delay(&mut self, delay: Duration) -> RWResult<T, ()> {
+        self.change_value(R_INPUT_CONFIG2, |v| {
+            (v & !0b1111) | Self::duration_to_rate_scale(delay)
+        })
+    }
+    /// Set repeat rate in milliseconds,
+    //  Clamps to multiples of 35 from 35 to 560
+    fn set_repeat_rate(&mut self, delay: Duration) -> RWResult<T, ()> {
+        self.change_value(R_INPUT_CONFIG, |v| {
+            (v & !0b1111) | Self::duration_to_rate_scale(delay)
+        })
+    }
+
+    fn duration_to_rate_scale(duration: Duration) -> u8 {
+        let ms = duration.as_millis();
+        let ms = max(35, ms);
+        let ms = min(560, ms);
+        ((ms - ms % 35 - 35) / 35) as u8
+    }
+    fn get_product_id(&mut self) -> RWResult<T, u8> {
+        Ok(self.read_byte(R_PRODUCT_ID)?)
+    }
+
+    /// Toggles multi-touch by toggling the multi-touch block bit in the config register
+    fn enable_multitouch(&mut self, enable: bool) -> RWResult<T, ()> {
+        self.change_value(R_MTOUCH_CONFIG, |value| {
+            if enable {
+                value & !0x80
+            } else {
+                value | 0x80
+            }
+        })
+    }
+    fn enable_repeat(&mut self, inputs: u8) -> RWResult<T, ()> {
+        Ok(self.write_byte(R_REPEAT_EN, inputs)?)
+    }
+    fn enable_interrupts(&mut self, inputs: u8) -> RWResult<T, ()> {
+        Ok(self.write_byte(R_INTERRUPT_EN, inputs)?)
+    }
+    fn enable_inputs(&mut self, inputs: u8) -> RWResult<T, ()> {
+        Ok(self.write_byte(R_INPUT_ENABLE, inputs)?)
+    }
+
+    // ----------------------------------------------------------------------------
     // LEDS handling
     fn set_led_linking(&mut self, led_index: u8, state: bool) -> RWResult<T, ()> {
         if led_index >= self.number_of_leds {
@@ -169,7 +268,7 @@ where
         }
     }
     fn convert_duration_to_period_value(period: Duration) -> u8 {
-        ((period.as_millis() / 32) & 127) as u8
+        ((min(4064, period.as_millis()) / 32) & 127) as u8
     }
 
     /// Set the overall period of a pulse from 32ms to 4.064 seconds

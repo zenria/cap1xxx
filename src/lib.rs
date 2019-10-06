@@ -20,16 +20,18 @@ where
 {
     i2c: T,
     number_of_leds: u8,
+    i2c_address: u8,
 }
 
 impl<T> CAP1XXX<T>
 where
     T: WriteRead + Write,
 {
-    pub fn new(i2c: T, number_of_leds: u8) -> Self {
+    pub fn new(i2c: T, i2c_address: u8, number_of_leds: u8) -> Self {
         Self {
             i2c,
             number_of_leds,
+            i2c_address,
         }
     }
 
@@ -68,12 +70,13 @@ where
         register: u8,
         value: u8,
     ) -> Result<(), WriteError<<T as Write>::Error>> {
-        Ok(self.i2c.cmd_write(DEFAULT_ADDR, register, &[value])?)
+        Ok(self.i2c.cmd_write(self.i2c_address, register, &[value])?)
     }
 
     fn read_byte(&mut self, register: u8) -> Result<u8, ReadError<<T as WriteRead>::Error>> {
         let mut buf = [0u8];
-        self.i2c.write_read(DEFAULT_ADDR, &[register], &mut buf)?;
+        self.i2c
+            .write_read(self.i2c_address, &[register], &mut buf)?;
         Ok(buf[0])
     }
 
@@ -83,7 +86,8 @@ where
         len: usize,
     ) -> Result<Vec<u8>, ReadError<<T as WriteRead>::Error>> {
         let mut buf = vec![0u8; len];
-        self.i2c.write_read(DEFAULT_ADDR, &[register], &mut buf)?;
+        self.i2c
+            .write_read(self.i2c_address, &[register], &mut buf)?;
         Ok(buf)
     }
 

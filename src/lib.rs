@@ -135,7 +135,7 @@ where
     pub fn clear_interrupt(&mut self) -> RWResult<T, ()> {
         self.clear_bit(R_MAIN_CONTROL, 0)
     }
-    pub fn interrupt_status(&mut self) -> RWResult<T, bool> {
+    pub fn is_interrupted(&mut self) -> RWResult<T, bool> {
         Ok(self
             .read_byte(R_MAIN_CONTROL)
             .map(|value| (value & 1) > 0)?)
@@ -192,6 +192,17 @@ where
     }
     pub fn enable_inputs(&mut self, inputs: u8) -> RWResult<T, ()> {
         Ok(self.write_byte(R_INPUT_ENABLE, inputs)?)
+    }
+
+    pub fn read_input_status(&mut self) -> Result<u8, ReadError<<T as WriteRead>::Error>> {
+        self.read_byte(R_INPUT_STATUS)
+    }
+
+    pub fn read_threshold_values(&mut self) -> Result<Vec<u8>, ReadError<<T as WriteRead>::Error>> {
+        self.read_block(R_INPUT_1_THRESH, self.number_of_leds as usize)
+    }
+    pub fn read_delta_values(&mut self) -> Result<Vec<u8>, ReadError<<T as WriteRead>::Error>> {
+        self.read_block(R_INPUT_1_THRESH, self.number_of_leds as usize)
     }
 
     // ----------------------------------------------------------------------------

@@ -23,6 +23,19 @@ where
     i2c_address: u8,
 }
 
+impl<T> Clone for CAP1XXX<T>
+where
+    T: WriteRead + Write + Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            i2c: self.i2c.clone(),
+            number_of_leds: self.number_of_leds,
+            i2c_address: self.i2c_address,
+        }
+    }
+}
+
 impl<T> CAP1XXX<T>
 where
     T: WriteRead + Write,

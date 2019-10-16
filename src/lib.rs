@@ -49,14 +49,6 @@ where
     }
 
     pub fn init(&mut self) -> RWResult<T, ()> {
-        //self.repeat_enabled    = 0b00000000
-        //self.release_enabled   = 0b11111111
-
-        //self.product_id = self._get_product_id()?;
-
-        //if not self.product_id in self.supported:
-        //    raise Exception("Product ID {} not supported!".format(self.product_id))
-
         // Enable all inputs with interrupt by default
         self.enable_inputs(0b11111111)?;
         self.enable_interrupts(0b11111111)?;
